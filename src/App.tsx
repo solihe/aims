@@ -4,6 +4,7 @@ import { StrategyPlanner } from './components/strategy/StrategyPlanner';
 import { LLMSettings } from './components/llm/LLMSettings';
 import { ContentOrchestration } from './components/orchestration/ContentOrchestration';
 import { ContentWorkspace } from './components/workspace/ContentWorkspace';
+import { EffectAnalytics } from './components/analytics/EffectAnalytics';
 import { useStrategyStore } from './stores/useStrategyStore';
 
 function App() {
@@ -17,9 +18,9 @@ function App() {
       case 'orchestration':
         return <ContentOrchestration onNavigateToWorkspace={() => setCurrentView('content')} />;
       case 'content':
-        return <ContentWorkspace />;
+        return <ContentWorkspace onNavigateToAnalytics={() => setCurrentView('analytics')} />;
       case 'analytics':
-        return <div className="p-8 text-center text-gray-500">效果分析开发中...</div>;
+        return <EffectAnalytics />;
       case 'llm-settings':
         return <LLMSettings />;
       default:

@@ -2,24 +2,30 @@
 import React, { useState, useEffect } from 'react';
 import { useContentStore } from '../../stores/useContentStore';
 import { useStrategyStore } from '../../stores/useStrategyStore';
-import { 
-  Edit3, 
-  Check, 
-  X, 
-  Clock, 
-  Calendar, 
-  Image, 
-  Video, 
-  FileText, 
+import {
+  Edit3,
+  Check,
+  X,
+  Clock,
+  Calendar,
+  Image,
+  Video,
+  FileText,
   Hash,
   Send,
   Eye,
   MessageSquare,
   ThumbsUp,
-  AlertCircle
+  AlertCircle,
+  ArrowRight,
+  BarChart3
 } from 'lucide-react';
 
-export const ContentWorkspace: React.FC = () => {
+interface ContentWorkspaceProps {
+  onNavigateToAnalytics?: () => void;
+}
+
+export const ContentWorkspace: React.FC<ContentWorkspaceProps> = ({ onNavigateToAnalytics }) => {
   const { contentCalendar, updateCalendarItem } = useContentStore();
   const { currentStrategy } = useStrategyStore();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
@@ -313,6 +319,30 @@ export const ContentWorkspace: React.FC = () => {
             <p className="text-gray-600">
               当前筛选条件下没有找到相关内容
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* 下一步操作 - 效果分析 */}
+      {contentCalendar && contentCalendar.some(item => item.status === 'published') && (
+        <div className="mt-6 bg-white rounded-lg shadow-sm border">
+          <div className="p-6">
+            <div className="flex justify-between items-center">
+              <div>
+                <h4 className="text-lg font-semibold text-gray-900">下一步：效果分析</h4>
+                <p className="text-gray-600 text-sm">查看已发布内容的传播效果和数据分析</p>
+              </div>
+              {onNavigateToAnalytics && (
+                <button
+                  onClick={onNavigateToAnalytics}
+                  className="px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-2"
+                >
+                  <BarChart3 className="w-4 h-4" />
+                  <span>查看效果分析</span>
+                  <ArrowRight className="w-4 h-4" />
+                </button>
+              )}
+            </div>
           </div>
         </div>
       )}

@@ -9,6 +9,7 @@ interface StrategyStore extends StrategyState {
   createStrategy: (intent: MarketingIntent) => Promise<CampaignStrategy>;
   updateStrategy: (id: string, updates: Partial<CampaignStrategy>) => Promise<void>;
   deleteStrategy: (id: string) => Promise<void>;
+  duplicateStrategy: (strategy: CampaignStrategy) => Promise<CampaignStrategy>;
   loadStrategies: () => Promise<void>;
   setCurrentStrategy: (strategy: CampaignStrategy | null) => void;
   setCreating: (creating: boolean) => void;
@@ -62,6 +63,18 @@ export const useStrategyStore = create<StrategyStore>()(
             currentStrategy:
               state.currentStrategy?.id === id ? null : state.currentStrategy,
           }));
+        } catch (error) {
+          throw error;
+        }
+      },
+
+      duplicateStrategy: async (strategy: CampaignStrategy) => {
+        try {
+          const duplicatedStrategy = await strategyService.duplicateStrategy(strategy);
+          set((state) => ({
+            strategies: [duplicatedStrategy, ...state.strategies],
+          }));
+          return duplicatedStrategy;
         } catch (error) {
           throw error;
         }

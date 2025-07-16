@@ -10,9 +10,10 @@ import { Target, Calendar, Users, MessageSquare, Zap, ArrowRight } from 'lucide-
 
 interface StrategyPlannerProps {
   onNavigateToOrchestration?: () => void;
+  onNavigateToCampaigns?: () => void;
 }
 
-export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOrchestration }) => {
+export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOrchestration, onNavigateToCampaigns }) => {
   const { createStrategy, isCreating, currentStrategy, setCurrentStrategy } = useStrategyStore();
   const { setError, setLoading } = useAppStore();
   const { getDefaultConfig } = useLLMStore();
@@ -75,10 +76,22 @@ export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOr
     <div className="max-w-4xl mx-auto p-6">
       <div className="bg-white rounded-lg shadow-sm border">
         <div className="p-6 border-b">
-          <h2 className="text-2xl font-bold text-gray-900">制定营销策略</h2>
-          <p className="text-gray-600 mt-2">
-            描述您的营销目标，AI将为您制定完整的跨平台传播战略
-          </p>
+          <div className="flex justify-between items-start">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">制定营销策略</h2>
+              <p className="text-gray-600 mt-2">
+                描述您的营销目标，AI将为您制定完整的跨平台传播战略
+              </p>
+            </div>
+            {onNavigateToCampaigns && (
+              <button
+                onClick={onNavigateToCampaigns}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                返回战役管理
+              </button>
+            )}
+          </div>
         </div>
 
         <form onSubmit={handleSubmit} className="p-6 space-y-6">

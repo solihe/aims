@@ -1,20 +1,37 @@
 import React, { useState } from 'react';
-import { Zap, Target, BarChart3, Settings, Brain } from 'lucide-react';
+import { Zap, Target, BarChart3, Settings, Brain, Briefcase } from 'lucide-react';
 import { StrategyPlanner } from './components/strategy/StrategyPlanner';
 import { LLMSettings } from './components/llm/LLMSettings';
 import { ContentOrchestration } from './components/orchestration/ContentOrchestration';
 import { ContentWorkspace } from './components/workspace/ContentWorkspace';
 import { EffectAnalytics } from './components/analytics/EffectAnalytics';
+import { CampaignManager } from './components/campaign/CampaignManager';
 import { useStrategyStore } from './stores/useStrategyStore';
+import { CampaignStrategy } from './types';
 
 function App() {
-  const [currentView, setCurrentView] = useState('strategy');
-  const { currentStrategy } = useStrategyStore();
+  const [currentView, setCurrentView] = useState('campaigns');
+  const { currentStrategy, setCurrentStrategy } = useStrategyStore();
 
   const renderView = () => {
     switch (currentView) {
+      case 'campaigns':
+        return (
+          <CampaignManager
+            onCreateCampaign={() => setCurrentView('strategy')}
+            onEditCampaign={(campaign: CampaignStrategy) => {
+              setCurrentStrategy(campaign);
+              setCurrentView('strategy');
+            }}
+          />
+        );
       case 'strategy':
-        return <StrategyPlanner onNavigateToOrchestration={() => setCurrentView('orchestration')} />;
+        return (
+          <StrategyPlanner
+            onNavigateToOrchestration={() => setCurrentView('orchestration')}
+            onNavigateToCampaigns={() => setCurrentView('campaigns')}
+          />
+        );
       case 'orchestration':
         return <ContentOrchestration onNavigateToWorkspace={() => setCurrentView('content')} />;
       case 'content':
@@ -24,11 +41,20 @@ function App() {
       case 'llm-settings':
         return <LLMSettings />;
       default:
-        return <StrategyPlanner onNavigateToOrchestration={() => setCurrentView('orchestration')} />;
+        return (
+          <CampaignManager
+            onCreateCampaign={() => setCurrentView('strategy')}
+            onEditCampaign={(campaign: CampaignStrategy) => {
+              setCurrentStrategy(campaign);
+              setCurrentView('strategy');
+            }}
+          />
+        );
     }
   };
 
   const navigationItems = [
+    { id: 'campaigns', label: '战役管理', icon: Briefcase },
     { id: 'strategy', label: '策略制定', icon: Target },
     { id: 'orchestration', label: '内容编排', icon: Zap },
     { id: 'content', label: '内容工作区', icon: Settings },

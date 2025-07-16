@@ -197,6 +197,38 @@ class StrategyService {
       throw error;
     }
   }
+
+  // 复制策略
+  async duplicateStrategy(strategy: CampaignStrategy): Promise<CampaignStrategy> {
+    if (this.isDevelopment) {
+      // 开发环境模拟复制
+      await mockApiDelay(1000);
+      mockApiError('策略复制失败', 0.02);
+
+      const duplicatedStrategy: CampaignStrategy = {
+        ...strategy,
+        id: `strategy-${Date.now()}`,
+        name: `${strategy.name} (副本)`,
+        createdAt: new Date(),
+        updatedAt: new Date()
+      };
+
+      return duplicatedStrategy;
+    }
+
+    try {
+      const response = await apiClient.post<ApiResponse<CampaignStrategy>>('/api/strategies/duplicate', strategy);
+
+      if (!response.data.success || !response.data.data) {
+        throw new Error(response.data.error || '策略复制失败');
+      }
+
+      return response.data.data;
+    } catch (error) {
+      console.error('策略复制失败:', error);
+      throw error;
+    }
+  }
 }
 
 export const strategyService = new StrategyService();

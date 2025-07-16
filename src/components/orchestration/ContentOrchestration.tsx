@@ -17,7 +17,17 @@ export const ContentOrchestration: React.FC<ContentOrchestrationProps> = ({ onNa
   useEffect(() => {
     if (currentStrategy) {
       // 如果没有内容日历，或者策略ID发生变化，则重新生成
-      if (!contentCalendar || currentStrategyId !== currentStrategy.id) {
+      const shouldRegenerate = !contentCalendar ||
+                              !currentStrategyId ||
+                              currentStrategyId !== currentStrategy.id;
+
+      if (shouldRegenerate) {
+        console.log('重新生成内容日历:', {
+          hasCalendar: !!contentCalendar,
+          currentStrategyId,
+          newStrategyId: currentStrategy.id,
+          shouldRegenerate
+        });
         generateContentCalendar(currentStrategy);
       }
     } else {
@@ -26,7 +36,7 @@ export const ContentOrchestration: React.FC<ContentOrchestrationProps> = ({ onNa
         clearContentCalendar();
       }
     }
-  }, [currentStrategy, contentCalendar, currentStrategyId, generateContentCalendar, clearContentCalendar]);
+  }, [currentStrategy?.id, contentCalendar, currentStrategyId, generateContentCalendar, clearContentCalendar]);
 
   if (!currentStrategy) {
     return (

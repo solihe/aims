@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Zap, Target, BarChart3, Settings, Brain } from 'lucide-react';
 import { StrategyPlanner } from './components/strategy/StrategyPlanner';
 import { LLMSettings } from './components/llm/LLMSettings';
+import { ContentOrchestration } from './components/orchestration/ContentOrchestration';
 import { useStrategyStore } from './stores/useStrategyStore';
 
 function App() {
@@ -13,31 +14,7 @@ function App() {
       case 'strategy':
         return <StrategyPlanner onNavigateToOrchestration={() => setCurrentView('orchestration')} />;
       case 'orchestration':
-        return (
-          <div className="p-8">
-            <h2 className="text-2xl font-bold mb-4">内容编排</h2>
-            {currentStrategy ? (
-              <div className="bg-white rounded-lg shadow-sm border p-6">
-                <h3 className="text-lg font-semibold mb-4">基于策略生成内容计划</h3>
-                <p className="text-gray-600 mb-4">策略：{currentStrategy.name}</p>
-                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                  <p className="text-blue-800">
-                    🚧 内容编排功能正在开发中...
-                  </p>
-                  <p className="text-blue-600 text-sm mt-2">
-                    将基于您的策略自动生成：内容日历、具体文案、发布计划
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-6">
-                <p className="text-yellow-800">
-                  请先在"策略制定"页面生成传播策略，然后返回此页面进行内容编排。
-                </p>
-              </div>
-            )}
-          </div>
-        );
+        return <ContentOrchestration />;
       case 'content':
         return <div className="p-8 text-center text-gray-500">内容工作区开发中...</div>;
       case 'analytics':

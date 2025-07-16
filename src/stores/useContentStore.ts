@@ -1,11 +1,34 @@
 // AIMS 内容状态管理
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { ContentState, ContentMatrix, ContentRequest } from '../types';
+import { ContentState, ContentMatrix, ContentRequest, CampaignStrategy } from '../types';
 import { contentService } from '../services/content/contentService';
 
+// 内容日历项目类型
+export interface ContentCalendarItem {
+  id: string;
+  week: number;
+  day: number;
+  platform: string;
+  contentType: string;
+  title: string;
+  content: string;
+  hashtags?: string[];
+  mentions?: string[];
+  mediaRequirements?: string;
+  publishTime: string;
+  phase: string;
+  objective: string;
+  status: 'draft' | 'approved' | 'published';
+}
+
 interface ContentStore extends ContentState {
-  // Actions
+  // 内容日历相关
+  contentCalendar: ContentCalendarItem[] | null;
+  generateContentCalendar: (strategy: CampaignStrategy) => Promise<void>;
+  updateCalendarItem: (itemId: string, updates: Partial<ContentCalendarItem>) => void;
+
+  // 原有Actions
   generateContent: (request: ContentRequest) => Promise<ContentMatrix>;
   updateContent: (matrixId: string, platformId: string, content: string) => Promise<void>;
   approveContent: (matrixId: string, platformId: string) => Promise<void>;
@@ -22,8 +45,29 @@ export const useContentStore = create<ContentStore>()(
       currentMatrix: null,
       matrices: [],
       isGenerating: false,
+      contentCalendar: null,
 
-      // Actions
+      // 内容日历Actions
+      generateContentCalendar: async (strategy: CampaignStrategy) => {
+        set({ isGenerating: true });
+        try {
+          const calendar = await contentService.generateContentCalendar(strategy);
+          set({ contentCalendar: calendar, isGenerating: false });
+        } catch (error) {
+          set({ isGenerating: false });
+          throw error;
+        }
+      },
+
+      updateCalendarItem: (itemId: string, updates: Partial<ContentCalendarItem>) => {
+        set((state) => ({
+          contentCalendar: state.contentCalendar?.map(item =>
+            item.id === itemId ? { ...item, ...updates } : item
+          ) || null
+        }));
+      },
+
+      // 原有Actions
       generateContent: async (request: ContentRequest) => {
         set({ isGenerating: true });
         try {

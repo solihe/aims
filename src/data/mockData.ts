@@ -30,6 +30,48 @@ export const mockStrategyTemplates = {
       zhihu: { role: PlatformRole.AUTHORITY_BUILDER, contentTypes: ['专业文章', '深度回答'], frequency: 3 },
       xiaohongshu: { role: PlatformRole.COMMUNITY_ENGAGER, contentTypes: ['经验分享', '案例展示'], frequency: 2 }
     }
+  },
+
+  [MarketingObjective.LEAD_GENERATION]: {
+    name: '线索获取精准传播',
+    phases: [
+      { name: '吸引期', duration: 2, objectives: ['吸引目标用户', '建立兴趣'], platforms: ['weibo', 'zhihu'] },
+      { name: '培育期', duration: 3, objectives: ['深度互动', '建立信任'], platforms: ['zhihu', 'xiaohongshu'] },
+      { name: '转化期', duration: 2, objectives: ['引导行动', '获取线索'], platforms: ['weibo', 'zhihu', 'xiaohongshu'] }
+    ],
+    platformRoles: {
+      weibo: { role: PlatformRole.TRAFFIC_GENERATOR, contentTypes: ['话题讨论', '互动内容'], frequency: 5 },
+      zhihu: { role: PlatformRole.AUTHORITY_BUILDER, contentTypes: ['专业解答', '案例分析'], frequency: 3 },
+      xiaohongshu: { role: PlatformRole.CONVERSION_CLOSER, contentTypes: ['体验分享', '使用教程'], frequency: 3 }
+    }
+  },
+
+  [MarketingObjective.SALES_CONVERSION]: {
+    name: '销售转化促进传播',
+    phases: [
+      { name: '需求激发', duration: 1, objectives: ['激发购买需求', '展示价值'], platforms: ['weibo', 'xiaohongshu'] },
+      { name: '信任建立', duration: 2, objectives: ['建立产品信任', '消除疑虑'], platforms: ['zhihu', 'xiaohongshu'] },
+      { name: '促成转化', duration: 1, objectives: ['促进购买决策', '限时优惠'], platforms: ['weibo', 'zhihu', 'xiaohongshu'] }
+    ],
+    platformRoles: {
+      weibo: { role: PlatformRole.AWARENESS_DRIVER, contentTypes: ['产品展示', '优惠活动'], frequency: 4 },
+      zhihu: { role: PlatformRole.AUTHORITY_BUILDER, contentTypes: ['产品评测', '对比分析'], frequency: 2 },
+      xiaohongshu: { role: PlatformRole.CONVERSION_CLOSER, contentTypes: ['购买体验', '使用效果'], frequency: 4 }
+    }
+  },
+
+  [MarketingObjective.CRISIS_MANAGEMENT]: {
+    name: '危机管理应急传播',
+    phases: [
+      { name: '快速响应', duration: 1, objectives: ['及时回应', '控制舆情'], platforms: ['weibo', 'zhihu'] },
+      { name: '澄清说明', duration: 1, objectives: ['详细澄清', '提供证据'], platforms: ['zhihu', 'weibo'] },
+      { name: '修复重建', duration: 2, objectives: ['修复形象', '重建信任'], platforms: ['zhihu', 'xiaohongshu', 'weibo'] }
+    ],
+    platformRoles: {
+      weibo: { role: PlatformRole.TRAFFIC_GENERATOR, contentTypes: ['官方声明', '实时更新'], frequency: 6 },
+      zhihu: { role: PlatformRole.AUTHORITY_BUILDER, contentTypes: ['详细说明', '专业分析'], frequency: 3 },
+      xiaohongshu: { role: PlatformRole.COMMUNITY_ENGAGER, contentTypes: ['真实分享', '用户互动'], frequency: 2 }
+    }
   }
 };
 

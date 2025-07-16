@@ -8,7 +8,7 @@ import { MarketingIntent, MarketingObjective } from '../../types';
 import { Target, Calendar, Users, MessageSquare, Zap } from 'lucide-react';
 
 export const StrategyPlanner: React.FC = () => {
-  const { createStrategy, isCreating } = useStrategyStore();
+  const { createStrategy, isCreating, currentStrategy, setCurrentStrategy } = useStrategyStore();
   const { setError, setLoading } = useAppStore();
   const { getDefaultConfig } = useLLMStore();
   
@@ -257,6 +257,123 @@ export const StrategyPlanner: React.FC = () => {
           </div>
         </form>
       </div>
+
+      {/* 策略结果显示 */}
+      {currentStrategy && (
+        <div className="mt-6 bg-white rounded-lg shadow-sm border">
+          <div className="p-6 border-b">
+            <div className="flex justify-between items-start">
+              <div>
+                <h3 className="text-xl font-bold text-gray-900">生成的传播策略</h3>
+                <p className="text-gray-600 mt-1">{currentStrategy.name}</p>
+              </div>
+              <button
+                onClick={() => setCurrentStrategy(null)}
+                className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                重新制定
+              </button>
+            </div>
+          </div>
+
+          <div className="p-6 space-y-6">
+            {/* 策略阶段 */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">执行阶段</h4>
+              <div className="space-y-4">
+                {currentStrategy.phases.map((phase, index) => (
+                  <div key={index} className="border rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <h5 className="font-medium text-gray-900">{phase.name}</h5>
+                      <span className="text-sm text-gray-500">{phase.duration}周</span>
+                    </div>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">目标：</span>
+                        <ul className="text-sm text-gray-600 ml-4">
+                          {phase.objectives.map((obj, i) => (
+                            <li key={i} className="list-disc">{obj}</li>
+                          ))}
+                        </ul>
+                      </div>
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">平台：</span>
+                        <span className="text-sm text-gray-600 ml-2">
+                          {phase.platforms.join(', ')}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 平台角色 */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">平台角色分工</h4>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Object.entries(currentStrategy.platformRoles).map(([platform, roleInfo]) => (
+                  <div key={platform} className="border rounded-lg p-4">
+                    <h5 className="font-medium text-gray-900 mb-2 capitalize">{platform}</h5>
+                    <div className="space-y-2">
+                      <div>
+                        <span className="text-sm font-medium text-gray-700">角色：</span>
+                        <span className="text-sm text-gray-600 ml-1">
+                          {typeof roleInfo === 'string' ? roleInfo : roleInfo.role}
+                        </span>
+                      </div>
+                      {typeof roleInfo === 'object' && roleInfo.contentTypes && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">内容类型：</span>
+                          <span className="text-sm text-gray-600 ml-1">
+                            {roleInfo.contentTypes.join(', ')}
+                          </span>
+                        </div>
+                      )}
+                      {typeof roleInfo === 'object' && roleInfo.frequency && (
+                        <div>
+                          <span className="text-sm font-medium text-gray-700">发布频率：</span>
+                          <span className="text-sm text-gray-600 ml-1">
+                            每周{roleInfo.frequency}次
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 内容主题 */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">内容主题</h4>
+              <div className="flex flex-wrap gap-2">
+                {currentStrategy.contentThemes.map((theme, index) => (
+                  <span
+                    key={index}
+                    className="px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm"
+                  >
+                    {theme}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* 预期成果 */}
+            <div>
+              <h4 className="text-lg font-semibold text-gray-900 mb-3">预期成果</h4>
+              <ul className="space-y-2">
+                {currentStrategy.expectedOutcomes.map((outcome, index) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-green-500 mr-2">✓</span>
+                    <span className="text-gray-700">{outcome}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

@@ -1,8 +1,26 @@
 {
-  "name": "vite-react-typescript-starter",
+  "name": "aims-campaign-management-system",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
   "type": "module",
+  "description": "AIMS - 战略性内容编排系统，AI驱动的营销战役管理平台",
+  "author": "solihe",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/solihe/aims.git"
+  },
+  "homepage": "https://github.com/solihe/aims",
+  "keywords": [
+    "AI",
+    "营销",
+    "内容编排",
+    "战役管理",
+    "策略制定",
+    "多平台传播",
+    "React",
+    "TypeScript",
+    "Vite"
+  ],
   "scripts": {
     "dev": "vite",
     "build": "vite build",

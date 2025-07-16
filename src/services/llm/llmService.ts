@@ -174,6 +174,26 @@ class LLMService {
     };
   }
 
+  // 生成内容接口（简化版本）
+  async generateContent(request: {
+    messages: Array<{ role: string; content: string }>;
+    config: LLMConfig;
+  }): Promise<{ content: string }> {
+    // 转换为LLMRequest格式
+    const systemMessage = request.messages.find(m => m.role === 'system');
+    const userMessage = request.messages.find(m => m.role === 'user');
+
+    const llmRequest: LLMRequest = {
+      prompt: userMessage?.content || '',
+      systemPrompt: systemMessage?.content,
+      maxTokens: request.config.maxTokens,
+      temperature: request.config.temperature
+    };
+
+    const response = await this.chatCompletion(request.config, llmRequest);
+    return { content: response.content };
+  }
+
   // 测试连接
   async testConnection(config: LLMConfig): Promise<boolean> {
     try {

@@ -3,18 +3,40 @@ import { ContentRequest, ContentMatrix, PlatformContent, ApiResponse, CampaignSt
 import { apiClient } from '../api/apiClient';
 import { ContentCalendarItem } from '../../stores/useContentStore';
 import { mockApiDelay, mockApiError } from '../../data/mockData';
+import { llmService } from '../llm/llmService';
+import { useLLMStore } from '../../stores/useLLMStore';
 
 class ContentService {
   private isDevelopment = import.meta.env.DEV;
 
+  // 获取LLM配置
+  private getLLMConfig() {
+    try {
+      // 从localStorage获取LLM配置
+      const llmState = localStorage.getItem('llm-store');
+      if (!llmState) {
+        return null;
+      }
+
+      const parsed = JSON.parse(llmState);
+      const configs = parsed.state?.configs || [];
+
+      // 返回第一个可用的配置
+      return configs.find((config: any) => config.apiKey) || null;
+    } catch (error) {
+      console.error('获取LLM配置失败:', error);
+      return null;
+    }
+  }
+
   // 生成内容日历
   async generateContentCalendar(strategy: CampaignStrategy): Promise<ContentCalendarItem[]> {
     if (this.isDevelopment) {
-      // 开发环境使用模拟数据
+      // 开发环境使用LLM生成真实内容
       await mockApiDelay(3000); // 模拟API延迟
       mockApiError('内容日历生成失败', 0.05); // 5%概率模拟错误
 
-      return this.generateMockContentCalendar(strategy);
+      return this.generateLLMContentCalendar(strategy);
     }
 
     try {
@@ -31,7 +53,204 @@ class ContentService {
     }
   }
 
-  // 生成模拟内容日历
+  // 使用LLM生成内容日历
+  private async generateLLMContentCalendar(strategy: CampaignStrategy): Promise<ContentCalendarItem[]> {
+    const calendar: ContentCalendarItem[] = [];
+    let currentWeek = 1;
+    let itemId = 1;
+
+    // 遍历策略阶段
+    for (const phase of strategy.phases) {
+      for (let week = 0; week < phase.duration; week++) {
+        // 为每个平台生成内容
+        for (const [platform, roleInfo] of Object.entries(strategy.platformRoles)) {
+          const frequency = typeof roleInfo === 'object' ? roleInfo.frequency : 2;
+          const contentTypes = typeof roleInfo === 'object' ? roleInfo.contentTypes : ['内容'];
+
+          // 根据频率生成内容
+          for (let i = 0; i < frequency; i++) {
+            const contentType = contentTypes[i % contentTypes.length];
+            const dayOfWeek = Math.floor((i * 7) / frequency) + 1;
+
+            try {
+              // 使用LLM生成标题和内容
+              const { title, content, hashtags } = await this.generateContentWithLLM(
+                strategy,
+                phase,
+                platform,
+                contentType
+              );
+
+              calendar.push({
+                id: `content-${itemId++}`,
+                week: currentWeek,
+                day: dayOfWeek,
+                platform,
+                contentType,
+                title,
+                content,
+                hashtags,
+                mediaRequirements: this.generateMediaRequirements(contentType),
+                publishTime: this.generatePublishTime(dayOfWeek, i),
+                phase: phase.name,
+                objective: phase.objectives[0] || '传播推广',
+                status: 'draft'
+              });
+            } catch (error) {
+              console.error(`生成${platform}内容失败:`, error);
+              // 如果LLM生成失败，使用备用模板
+              calendar.push({
+                id: `content-${itemId++}`,
+                week: currentWeek,
+                day: dayOfWeek,
+                platform,
+                contentType,
+                title: this.generateFallbackTitle(strategy, phase, platform, contentType),
+                content: this.generateFallbackContent(strategy, phase, platform, contentType),
+                hashtags: this.generateHashtags(strategy.contentThemes, platform),
+                mediaRequirements: this.generateMediaRequirements(contentType),
+                publishTime: this.generatePublishTime(dayOfWeek, i),
+                phase: phase.name,
+                objective: phase.objectives[0] || '传播推广',
+                status: 'draft'
+              });
+            }
+          }
+        }
+        currentWeek++;
+      }
+    }
+
+    return calendar.sort((a, b) => a.week - b.week || a.day - b.day);
+  }
+
+  // 使用LLM生成具体内容
+  private async generateContentWithLLM(
+    strategy: CampaignStrategy,
+    phase: any,
+    platform: string,
+    contentType: string
+  ): Promise<{ title: string; content: string; hashtags: string[] }> {
+    // 获取LLM配置
+    const config = this.getLLMConfig();
+
+    if (!config) {
+      throw new Error('LLM配置未找到，请先在设置中配置LLM服务');
+    }
+
+    // 构建提示词
+    const prompt = this.buildContentPrompt(strategy, phase, platform, contentType);
+
+    try {
+      const response = await llmService.generateContent({
+        messages: [
+          {
+            role: 'system',
+            content: '你是一个专业的营销内容创作专家，擅长为不同平台创作吸引人的营销内容。请严格按照JSON格式返回结果。'
+          },
+          {
+            role: 'user',
+            content: prompt
+          }
+        ],
+        config
+      });
+
+      // 解析LLM响应
+      const result = this.parseLLMResponse(response.content);
+      return result;
+    } catch (error) {
+      console.error('LLM内容生成失败:', error);
+      throw error;
+    }
+  }
+
+  // 构建内容生成提示词
+  private buildContentPrompt(
+    strategy: CampaignStrategy,
+    phase: any,
+    platform: string,
+    contentType: string
+  ): string {
+    const objectiveLabels = {
+      'product_launch': '产品发布',
+      'brand_building': '品牌建设',
+      'lead_generation': '线索获取',
+      'sales_conversion': '销售转化',
+      'crisis_management': '危机管理'
+    };
+
+    const platformStyles = {
+      'weibo': '微博风格：简洁有力，使用表情符号，适合快速传播',
+      'zhihu': '知乎风格：专业深度，逻辑清晰，提供价值',
+      'xiaohongshu': '小红书风格：生活化，真实体验，视觉化表达',
+      'douyin': '抖音风格：年轻化，有趣互动，短视频思维',
+      'wechat': '微信风格：亲和力强，适合朋友圈分享'
+    };
+
+    return `
+请为以下营销战役生成${platform}平台的${contentType}内容：
+
+## 战役信息
+- 战役名称：${strategy.name}
+- 营销目标：${objectiveLabels[strategy.objective as keyof typeof objectiveLabels] || strategy.objective}
+- 当前阶段：${phase.name}
+- 阶段目标：${phase.objectives.join('、')}
+- 内容主题：${strategy.contentThemes.join('、')}
+
+## 平台要求
+- 目标平台：${platform}
+- 内容类型：${contentType}
+- 平台风格：${platformStyles[platform as keyof typeof platformStyles] || '专业营销风格'}
+
+## 具体描述
+${strategy.description || '请根据营销目标创作相关内容'}
+
+## 输出要求
+请严格按照以下JSON格式返回：
+{
+  "title": "吸引人的标题（不超过50字）",
+  "content": "完整的内容文案（根据平台特点调整长度和风格）",
+  "hashtags": ["相关话题标签1", "相关话题标签2", "相关话题标签3"]
+}
+
+注意：
+1. 内容要符合${platform}平台的用户习惯和传播特点
+2. 标题要有吸引力，能够引起用户关注
+3. 内容要与战役目标和阶段目标高度相关
+4. 话题标签要有助于内容传播和用户发现
+5. 避免使用过于商业化或硬广告的表达方式
+`;
+  }
+
+  // 解析LLM响应
+  private parseLLMResponse(response: string): { title: string; content: string; hashtags: string[] } {
+    try {
+      // 尝试提取JSON部分
+      const jsonMatch = response.match(/\{[\s\S]*\}/);
+      if (!jsonMatch) {
+        throw new Error('未找到有效的JSON响应');
+      }
+
+      const parsed = JSON.parse(jsonMatch[0]);
+
+      return {
+        title: parsed.title || '营销内容标题',
+        content: parsed.content || '营销内容正文',
+        hashtags: Array.isArray(parsed.hashtags) ? parsed.hashtags : ['营销', '推广']
+      };
+    } catch (error) {
+      console.error('解析LLM响应失败:', error);
+      // 返回默认值
+      return {
+        title: '营销内容标题',
+        content: '营销内容正文',
+        hashtags: ['营销', '推广']
+      };
+    }
+  }
+
+  // 生成模拟内容日历（备用方法）
   private generateMockContentCalendar(strategy: CampaignStrategy): ContentCalendarItem[] {
     const calendar: ContentCalendarItem[] = [];
     let currentWeek = 1;
@@ -56,10 +275,10 @@ class ContentService {
               day: dayOfWeek,
               platform,
               contentType,
-              title: this.generateMockTitle(strategy.objective, phase.name, platform, contentType),
-              content: this.generateMockContent(strategy.objective, phase.name, platform, contentType),
-              hashtags: this.generateMockHashtags(strategy.contentThemes, platform),
-              mediaRequirements: this.generateMockMediaRequirements(contentType),
+              title: this.generateFallbackTitle(strategy, phase, platform, contentType),
+              content: this.generateFallbackContent(strategy, phase, platform, contentType),
+              hashtags: this.generateHashtags(strategy.contentThemes, platform),
+              mediaRequirements: this.generateMediaRequirements(contentType),
               publishTime: this.generatePublishTime(dayOfWeek, i),
               phase: phase.name,
               objective: phase.objectives[0] || '传播推广',
@@ -74,7 +293,74 @@ class ContentService {
     return calendar.sort((a, b) => a.week - b.week || a.day - b.day);
   }
 
-  // 生成模拟标题
+  // 生成备用标题（当LLM失败时使用）
+  private generateFallbackTitle(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
+    const templates = [
+      `${strategy.name} - ${phase.name}阶段重要更新`,
+      `关于${strategy.name}的最新进展`,
+      `${phase.name}：${strategy.name}精彩内容分享`,
+      `${strategy.name}${phase.name}阶段亮点解析`,
+      `不容错过！${strategy.name}重要信息`
+    ];
+
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  // 生成备用内容（当LLM失败时使用）
+  private generateFallbackContent(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
+    const objectiveLabels = {
+      'product_launch': '产品发布',
+      'brand_building': '品牌建设',
+      'lead_generation': '线索获取',
+      'sales_conversion': '销售转化',
+      'crisis_management': '危机管理'
+    };
+
+    const objective = objectiveLabels[strategy.objective as keyof typeof objectiveLabels] || strategy.objective;
+
+    return `🎯 ${strategy.name}
+
+📍 当前阶段：${phase.name}
+🎯 营销目标：${objective}
+✨ 核心主题：${strategy.contentThemes.join('、')}
+
+${phase.objectives.map((obj: string, index: number) => `${index + 1}. ${obj}`).join('\n')}
+
+${strategy.description ? `\n💡 ${strategy.description}` : ''}
+
+#${strategy.contentThemes.join(' #')}`;
+  }
+
+  // 生成话题标签
+  private generateHashtags(themes: string[], platform: string): string[] {
+    const baseHashtags = themes.slice(0, 3);
+    const platformHashtags = {
+      'weibo': ['热门', '推荐'],
+      'zhihu': ['专业', '深度'],
+      'xiaohongshu': ['种草', '好物'],
+      'douyin': ['热门', '推荐'],
+      'wechat': ['分享', '推荐']
+    };
+
+    const additional = platformHashtags[platform as keyof typeof platformHashtags] || ['推广', '营销'];
+    return [...baseHashtags, ...additional.slice(0, 2)];
+  }
+
+  // 生成素材需求
+  private generateMediaRequirements(contentType: string): string {
+    const requirements = {
+      '动态': '配图1-3张，建议使用高质量产品图或场景图',
+      '文章': '封面图1张，正文配图2-5张，建议图文并茂',
+      '笔记': '封面图1张，步骤图3-6张，建议真实拍摄',
+      '视频': '视频时长15-60秒，建议高清录制',
+      '话题': '话题海报1张，互动图片2-3张',
+      '内容': '相关配图1-2张'
+    };
+
+    return requirements[contentType as keyof typeof requirements] || '相关配图1-2张';
+  }
+
+  // 生成模拟标题（保留原方法作为备用）
   private generateMockTitle(objective: string, phase: string, platform: string, contentType: string): string {
     const titleTemplates = {
       'product_launch': {
@@ -152,21 +438,21 @@ class ContentService {
     return contentTemplates[platform as keyof typeof contentTemplates] || contentTemplates.weibo;
   }
 
-  // 生成模拟话题标签
+  // 生成模拟话题标签（保留作为备用）
   private generateMockHashtags(themes: string[], platform: string): string[] {
-    const baseHashtags = ['AI看护', '智能家居', '老人关爱', '科技生活'];
-    const themeHashtags = themes.map(theme => `${theme}产品`);
+    const baseHashtags = themes.slice(0, 2);
+    const themeHashtags = themes.map(theme => `${theme}相关`);
 
-    return [...baseHashtags.slice(0, 2), ...themeHashtags.slice(0, 2)];
+    return [...baseHashtags, ...themeHashtags.slice(0, 2)];
   }
 
-  // 生成模拟素材需求
+  // 生成模拟素材需求（保留作为备用）
   private generateMockMediaRequirements(contentType: string): string {
     const requirements = {
-      '动态': '产品实拍图 + 使用场景图',
-      '文章': '产品细节图 + 技术原理图 + 使用效果对比图',
-      '笔记': '开箱视频 + 使用演示 + 效果展示',
-      '视频': '产品介绍视频 + 用户体验视频',
+      '动态': '相关配图1-3张',
+      '文章': '封面图 + 正文配图',
+      '笔记': '步骤图 + 效果图',
+      '视频': '视频素材 + 封面图',
       '话题': '话题海报 + 互动图片'
     };
 

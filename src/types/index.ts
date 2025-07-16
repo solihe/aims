@@ -33,6 +33,7 @@ export interface MarketingIntent {
 export interface CampaignStrategy {
   id: string;
   name: string;
+  description: string; // 用户的具体描述信息
   objective: MarketingObjective;
   phases: {
     name: string;

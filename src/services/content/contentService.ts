@@ -74,12 +74,20 @@ class ContentService {
 
             try {
               // 使用LLM生成标题和内容
+              console.log(`正在为${platform}平台生成${contentType}内容...`, {
+                strategy: strategy.name,
+                phase: phase.name,
+                description: strategy.description?.slice(0, 50) + '...'
+              });
+
               const { title, content, hashtags } = await this.generateContentWithLLM(
                 strategy,
                 phase,
                 platform,
                 contentType
               );
+
+              console.log(`${platform}内容生成成功:`, { title: title.slice(0, 30) + '...' });
 
               calendar.push({
                 id: `content-${itemId++}`,
@@ -98,6 +106,8 @@ class ContentService {
               });
             } catch (error) {
               console.error(`生成${platform}内容失败:`, error);
+              console.warn(`使用备用模板为${platform}生成内容`);
+
               // 如果LLM生成失败，使用备用模板
               calendar.push({
                 id: `content-${itemId++}`,
@@ -188,39 +198,59 @@ class ContentService {
       'wechat': '微信风格：亲和力强，适合朋友圈分享'
     };
 
-    return `
-请为以下营销战役生成${platform}平台的${contentType}内容：
+    // 提取品牌/产品信息
+    const brandInfo = this.extractBrandInfo(strategy.description);
 
-## 战役信息
-- 战役名称：${strategy.name}
+    return `
+你是一个专业的营销内容创作者，需要为品牌/产品创作推广内容。
+
+## 推广对象
+${strategy.description}
+
+## 营销任务
 - 营销目标：${objectiveLabels[strategy.objective as keyof typeof objectiveLabels] || strategy.objective}
 - 当前阶段：${phase.name}
-- 阶段目标：${phase.objectives.join('、')}
-- 内容主题：${strategy.contentThemes.join('、')}
+- 阶段任务：${phase.objectives.join('、')}
+- 核心卖点：${strategy.contentThemes.join('、')}
 
-## 平台要求
+## 内容要求
 - 目标平台：${platform}
 - 内容类型：${contentType}
-- 平台风格：${platformStyles[platform as keyof typeof platformStyles] || '专业营销风格'}
+- 创作风格：${platformStyles[platform as keyof typeof platformStyles] || '专业营销风格'}
 
-## 具体描述
-${strategy.description || '请根据营销目标创作相关内容'}
+## 创作指导
+请创作能够实现"${phase.objectives.join('、')}"目标的${contentType}内容。
+内容应该：
+1. 突出品牌/产品的核心价值和特色
+2. 符合${phase.name}阶段的传播策略
+3. 适合${platform}平台的用户群体
+4. 能够引起目标用户的兴趣和互动
 
-## 输出要求
+## 输出格式
 请严格按照以下JSON格式返回：
 {
-  "title": "吸引人的标题（不超过50字）",
-  "content": "完整的内容文案（根据平台特点调整长度和风格）",
-  "hashtags": ["相关话题标签1", "相关话题标签2", "相关话题标签3"]
+  "title": "吸引人的标题（突出品牌/产品亮点，不超过50字）",
+  "content": "完整的推广文案（重点介绍品牌/产品，符合平台特色）",
+  "hashtags": ["品牌相关标签", "产品特色标签", "目标用户标签"]
 }
 
-注意：
-1. 内容要符合${platform}平台的用户习惯和传播特点
-2. 标题要有吸引力，能够引起用户关注
-3. 内容要与战役目标和阶段目标高度相关
-4. 话题标签要有助于内容传播和用户发现
-5. 避免使用过于商业化或硬广告的表达方式
+重要提醒：
+- 你要推广的是具体的品牌/产品，不是营销策略本身
+- 内容要让用户对品牌/产品产生兴趣，而不是了解营销计划
+- 根据阶段目标调整内容重点（认知/兴趣/转化等）
+- 保持内容的真实性和吸引力
 `;
+  }
+
+  // 提取品牌信息（辅助方法）
+  private extractBrandInfo(description: string): { brandName: string; productType: string; keyFeatures: string[] } {
+    // 简单的品牌信息提取逻辑
+    const words = description.split(/\s+|，|。|、/);
+    const brandName = words.find(word => word.includes('品牌') || word.length > 2) || '品牌';
+    const productType = words.find(word => word.includes('产品') || word.includes('服务')) || '产品';
+    const keyFeatures = words.filter(word => word.length > 2 && !word.includes('的')).slice(0, 3);
+
+    return { brandName, productType, keyFeatures };
   }
 
   // 解析LLM响应
@@ -295,55 +325,161 @@ ${strategy.description || '请根据营销目标创作相关内容'}
 
   // 生成备用标题（当LLM失败时使用）
   private generateFallbackTitle(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
+    // 从描述中提取品牌名称
+    const brandName = this.extractBrandNameFromDescription(strategy.description);
+
     const templates = [
-      `${strategy.name} - ${phase.name}阶段重要更新`,
-      `关于${strategy.name}的最新进展`,
-      `${phase.name}：${strategy.name}精彩内容分享`,
-      `${strategy.name}${phase.name}阶段亮点解析`,
-      `不容错过！${strategy.name}重要信息`
+      `${brandName}全新亮相，${phase.objectives[0]}正式启动`,
+      `发现${brandName}的独特魅力`,
+      `${brandName}带来全新体验`,
+      `为什么选择${brandName}？`,
+      `${brandName}：${strategy.contentThemes.join('与')}的完美结合`
     ];
 
     return templates[Math.floor(Math.random() * templates.length)];
   }
 
+  // 从描述中提取品牌名称
+  private extractBrandNameFromDescription(description: string): string {
+    // 查找可能的品牌名称
+    const words = description.split(/\s+|，|。|、/);
+
+    // 查找明确的品牌标识
+    for (const word of words) {
+      if (word.includes('品牌') && word.length > 2) {
+        return word.replace('品牌', '').replace('是一个', '').replace('的', '');
+      }
+      if (word.length >= 2 && word.length <= 6 && !word.includes('一个') && !word.includes('新创')) {
+        // 可能是品牌名称
+        if (words.indexOf(word) < 3) { // 通常品牌名在描述前部
+          return word;
+        }
+      }
+    }
+
+    return '我们的品牌';
+  }
+
   // 生成备用内容（当LLM失败时使用）
   private generateFallbackContent(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
-    const objectiveLabels = {
-      'product_launch': '产品发布',
-      'brand_building': '品牌建设',
-      'lead_generation': '线索获取',
-      'sales_conversion': '销售转化',
-      'crisis_management': '危机管理'
+    const brandName = this.extractBrandNameFromDescription(strategy.description);
+
+    // 根据平台生成不同风格的内容
+    const platformContent = {
+      'weibo': this.generateWeiboContent(brandName, strategy, phase),
+      'zhihu': this.generateZhihuContent(brandName, strategy, phase),
+      'xiaohongshu': this.generateXiaohongshuContent(brandName, strategy, phase),
+      'douyin': this.generateDouyinContent(brandName, strategy, phase),
+      'wechat': this.generateWechatContent(brandName, strategy, phase)
     };
 
-    const objective = objectiveLabels[strategy.objective as keyof typeof objectiveLabels] || strategy.objective;
+    return platformContent[platform as keyof typeof platformContent] ||
+           this.generateGenericContent(brandName, strategy, phase);
+  }
 
-    return `🎯 ${strategy.name}
+  // 微博风格内容
+  private generateWeiboContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `🔥 ${brandName}正式亮相！
 
-📍 当前阶段：${phase.name}
-🎯 营销目标：${objective}
-✨ 核心主题：${strategy.contentThemes.join('、')}
+✨ ${strategy.contentThemes.join('、')}的完美融合
+🎯 ${phase.objectives.join('、')}
+💫 ${strategy.description.slice(0, 50)}...
 
-${phase.objectives.map((obj: string, index: number) => `${index + 1}. ${obj}`).join('\n')}
+期待与你一起探索更多可能！
 
-${strategy.description ? `\n💡 ${strategy.description}` : ''}
+#${brandName} #${strategy.contentThemes.join(' #')}`;
+  }
 
-#${strategy.contentThemes.join(' #')}`;
+  // 知乎风格内容
+  private generateZhihuContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `# ${brandName}：${strategy.contentThemes.join('与')}的创新结合
+
+## 品牌背景
+
+${strategy.description}
+
+## 核心优势
+
+${strategy.contentThemes.map((theme, index) => `${index + 1}. **${theme}**：为用户带来独特价值`).join('\n')}
+
+## 当前发展
+
+我们正在${phase.name}阶段，专注于${phase.objectives.join('、')}。
+
+期待与更多朋友交流，共同探讨${strategy.contentThemes.join('、')}的未来发展。`;
+  }
+
+  // 小红书风格内容
+  private generateXiaohongshuContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `发现宝藏品牌${brandName}！✨
+
+${strategy.description.slice(0, 80)}...
+
+💎 为什么推荐：
+${strategy.contentThemes.map(theme => `• ${theme}体验超棒`).join('\n')}
+
+🌟 真实感受：
+${phase.objectives.join('，')}，每一个细节都很用心！
+
+姐妹们快来了解一下～
+
+#${brandName} #${strategy.contentThemes.join(' #')} #好物推荐`;
+  }
+
+  // 抖音风格内容
+  private generateDouyinContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `🎬 ${brandName}来了！
+
+${strategy.description.slice(0, 60)}...
+
+🔥 亮点：
+${strategy.contentThemes.map(theme => `✅ ${theme}`).join('\n')}
+
+💫 ${phase.objectives.join('、')}正在进行中
+
+关注我，带你了解更多！
+
+#${brandName} #${strategy.contentThemes.join(' #')}`;
+  }
+
+  // 微信风格内容
+  private generateWechatContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `朋友们，给大家介绍一个不错的品牌——${brandName}
+
+${strategy.description}
+
+特别喜欢它的${strategy.contentThemes.join('和')}，${phase.objectives.join('，')}做得很到位。
+
+分享给大家，希望对你们也有帮助 😊`;
+  }
+
+  // 通用内容
+  private generateGenericContent(brandName: string, strategy: CampaignStrategy, phase: any): string {
+    return `${brandName}为您带来全新体验
+
+${strategy.description}
+
+核心特色：${strategy.contentThemes.join('、')}
+当前重点：${phase.objectives.join('、')}
+
+期待与您一起探索更多可能！`;
   }
 
   // 生成话题标签
   private generateHashtags(themes: string[], platform: string): string[] {
-    const baseHashtags = themes.slice(0, 3);
+    // 基于主题生成相关标签
+    const themeHashtags = themes.slice(0, 2);
+
     const platformHashtags = {
-      'weibo': ['热门', '推荐'],
-      'zhihu': ['专业', '深度'],
-      'xiaohongshu': ['种草', '好物'],
-      'douyin': ['热门', '推荐'],
+      'weibo': ['新品推荐', '品牌故事'],
+      'zhihu': ['产品体验', '行业分析'],
+      'xiaohongshu': ['种草', '好物推荐'],
+      'douyin': ['新发现', '值得关注'],
       'wechat': ['分享', '推荐']
     };
 
-    const additional = platformHashtags[platform as keyof typeof platformHashtags] || ['推广', '营销'];
-    return [...baseHashtags, ...additional.slice(0, 2)];
+    const additional = platformHashtags[platform as keyof typeof platformHashtags] || ['品牌推荐', '产品体验'];
+    return [...themeHashtags, ...additional];
   }
 
   // 生成素材需求

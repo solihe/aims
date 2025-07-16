@@ -16,7 +16,8 @@ class StrategyService {
       const template = mockStrategyTemplates[intent.objective];
       const strategy: CampaignStrategy = {
         id: `strategy-${Date.now()}`,
-        name: `${intent.description.slice(0, 20)}...的传播策略`,
+        name: this.generateStrategyName(intent.description, intent.objective),
+        description: intent.description, // 保存完整描述
         objective: intent.objective,
         phases: template.phases,
         platformRoles: template.platformRoles,
@@ -43,11 +44,70 @@ class StrategyService {
     }
   }
 
-  // 提取主题
+  // 生成策略名称
+  private generateStrategyName(description: string, objective: MarketingObjective): string {
+    // 提取关键词作为策略名称
+    const words = description.split(/\s+|，|。|、/).filter(word => word.length > 1);
+    const keyWords = words.slice(0, 3).join(''); // 取前3个关键词
+
+    const objectiveLabels = {
+      'product_launch': '产品发布',
+      'brand_building': '品牌建设',
+      'lead_generation': '线索获取',
+      'sales_conversion': '销售转化',
+      'crisis_management': '危机管理'
+    };
+
+    const objectiveLabel = objectiveLabels[objective] || '营销';
+    return `${keyWords}${objectiveLabel}策略`;
+  }
+
+  // 提取主题（改进版）
   private extractThemes(description: string): string[] {
-    // 简单的关键词提取逻辑
-    const keywords = ['AI', '产品', '技术', '创新', '用户', '价值', '效率', '体验'];
-    return keywords.filter(keyword => description.includes(keyword));
+    // 更智能的关键词提取
+    const commonKeywords = ['品牌', '产品', '服务', '用户', '客户', '市场', '技术', '创新', '体验', '价值', '质量', '专业'];
+    const extractedKeywords: string[] = [];
+
+    // 提取明确提到的关键词
+    commonKeywords.forEach(keyword => {
+      if (description.includes(keyword)) {
+        extractedKeywords.push(keyword);
+      }
+    });
+
+    // 提取特定行业词汇
+    const industryKeywords = this.extractIndustryKeywords(description);
+    extractedKeywords.push(...industryKeywords);
+
+    // 如果没有提取到足够的关键词，添加通用主题
+    if (extractedKeywords.length < 2) {
+      extractedKeywords.push('营销推广', '品牌传播');
+    }
+
+    return [...new Set(extractedKeywords)].slice(0, 5); // 去重并限制数量
+  }
+
+  // 提取行业关键词
+  private extractIndustryKeywords(description: string): string[] {
+    const industryMap = {
+      '白酒': ['白酒', '酒类', '传统文化', '社交'],
+      '科技': ['AI', '人工智能', '技术', '创新', '智能'],
+      '教育': ['教育', '学习', '培训', '知识'],
+      '医疗': ['医疗', '健康', '医院', '治疗'],
+      '金融': ['金融', '银行', '投资', '理财'],
+      '电商': ['电商', '购物', '零售', '商城'],
+      '餐饮': ['餐饮', '美食', '食品', '料理'],
+      '旅游': ['旅游', '旅行', '景点', '度假']
+    };
+
+    const keywords: string[] = [];
+    Object.entries(industryMap).forEach(([industry, terms]) => {
+      if (terms.some(term => description.includes(term))) {
+        keywords.push(industry, ...terms.filter(term => description.includes(term)));
+      }
+    });
+
+    return [...new Set(keywords)];
   }
 
   // 生成预期结果

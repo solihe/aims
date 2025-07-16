@@ -117,7 +117,7 @@ class ContentService {
                 contentType,
                 title: this.generateFallbackTitle(strategy, phase, platform, contentType),
                 content: this.generateFallbackContent(strategy, phase, platform, contentType),
-                hashtags: this.generateHashtags(strategy.contentThemes, platform),
+                hashtags: this.generateHashtags(strategy.contentThemes, platform, strategy.objective),
                 mediaRequirements: this.generateMediaRequirements(contentType),
                 publishTime: this.generatePublishTime(dayOfWeek, i),
                 phase: phase.name,
@@ -182,10 +182,86 @@ class ContentService {
     platform: string,
     contentType: string
   ): string {
+    // 根据营销目标选择不同的内容生成策略
+    if (strategy.objective === 'lead_generation') {
+      return this.buildLeadGenerationPrompt(strategy, phase, platform, contentType);
+    } else {
+      return this.buildBrandPromotionPrompt(strategy, phase, platform, contentType);
+    }
+  }
+
+  // 线索获取专用提示词
+  private buildLeadGenerationPrompt(
+    strategy: CampaignStrategy,
+    phase: any,
+    platform: string,
+    contentType: string
+  ): string {
+    const platformStyles = {
+      'weibo': '微博风格：简洁有力，使用表情符号，适合快速传播',
+      'zhihu': '知乎风格：专业深度，逻辑清晰，提供价值',
+      'xiaohongshu': '小红书风格：生活化，真实体验，视觉化表达',
+      'douyin': '抖音风格：年轻化，有趣互动，短视频思维',
+      'wechat': '微信风格：亲和力强，适合朋友圈分享'
+    };
+
+    const brandName = this.extractBrandNameFromDescription(strategy.description);
+
+    return `
+你是一个专业的线索获取营销专家，需要创作能够收集潜在客户信息的内容。
+
+## 业务背景
+${strategy.description}
+
+## 线索获取任务
+- 目标：收集对${brandName}感兴趣的潜在客户信息
+- 当前阶段：${phase.name}
+- 阶段重点：${phase.objectives.join('、')}
+- 目标受众：${strategy.contentThemes.join('、')}相关的潜在客户
+
+## 内容策略
+- 目标平台：${platform}
+- 内容类型：${contentType}
+- 创作风格：${platformStyles[platform as keyof typeof platformStyles] || '专业营销风格'}
+
+## 线索获取原则
+1. **提供价值**：不直接推销，而是提供有用的信息、工具或资源
+2. **激发兴趣**：让用户想要了解更多相关信息
+3. **设置钩子**：暗示有更多价值内容可以获取
+4. **引导行动**：自然地引导用户留下联系方式
+
+## 内容类型建议
+- 教育型：行业知识、使用技巧、专业指南
+- 工具型：清单、模板、计算器、测试
+- 优惠型：限时优惠、免费试用、专属福利
+- 社交型：用户故事、案例分享、社区讨论
+
+## 输出格式
+请严格按照以下JSON格式返回：
+{
+  "title": "有价值的标题（突出能获得的价值，不超过50字）",
+  "content": "提供价值的内容（教育/工具/优惠信息，最后自然引导获取更多信息）",
+  "hashtags": ["行业相关标签", "价值内容标签", "目标用户标签"]
+}
+
+重要提醒：
+- 重点是提供价值，而不是直接推销产品
+- 内容要让用户觉得有用，愿意了解更多
+- 自然地暗示有更多价值内容可以获取
+- 避免过于商业化的表达
+`;
+  }
+
+  // 品牌推广专用提示词
+  private buildBrandPromotionPrompt(
+    strategy: CampaignStrategy,
+    phase: any,
+    platform: string,
+    contentType: string
+  ): string {
     const objectiveLabels = {
       'product_launch': '产品发布',
       'brand_building': '品牌建设',
-      'lead_generation': '线索获取',
       'sales_conversion': '销售转化',
       'crisis_management': '危机管理'
     };
@@ -197,9 +273,6 @@ class ContentService {
       'douyin': '抖音风格：年轻化，有趣互动，短视频思维',
       'wechat': '微信风格：亲和力强，适合朋友圈分享'
     };
-
-    // 提取品牌/产品信息
-    const brandInfo = this.extractBrandInfo(strategy.description);
 
     return `
 你是一个专业的营销内容创作者，需要为品牌/产品创作推广内容。
@@ -307,7 +380,7 @@ ${strategy.description}
               contentType,
               title: this.generateFallbackTitle(strategy, phase, platform, contentType),
               content: this.generateFallbackContent(strategy, phase, platform, contentType),
-              hashtags: this.generateHashtags(strategy.contentThemes, platform),
+              hashtags: this.generateHashtags(strategy.contentThemes, platform, strategy.objective),
               mediaRequirements: this.generateMediaRequirements(contentType),
               publishTime: this.generatePublishTime(dayOfWeek, i),
               phase: phase.name,
@@ -325,9 +398,33 @@ ${strategy.description}
 
   // 生成备用标题（当LLM失败时使用）
   private generateFallbackTitle(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
-    // 从描述中提取品牌名称
     const brandName = this.extractBrandNameFromDescription(strategy.description);
 
+    if (strategy.objective === 'lead_generation') {
+      return this.generateLeadGenerationTitle(strategy, phase);
+    } else {
+      return this.generateBrandPromotionTitle(brandName, strategy, phase);
+    }
+  }
+
+  // 线索获取标题
+  private generateLeadGenerationTitle(strategy: CampaignStrategy, phase: any): string {
+    const leadMagnets = this.getLeadMagnetIdeas(strategy.description);
+    const magnet = leadMagnets[0];
+
+    const templates = [
+      `免费领取：${magnet.title}`,
+      `${magnet.title}免费分享，限时领取`,
+      `干货分享：${magnet.title}`,
+      `实用！${magnet.title}免费下载`,
+      `${strategy.contentThemes.join('、')}爱好者必备：${magnet.title}`
+    ];
+
+    return templates[Math.floor(Math.random() * templates.length)];
+  }
+
+  // 品牌推广标题
+  private generateBrandPromotionTitle(brandName: string, strategy: CampaignStrategy, phase: any): string {
     const templates = [
       `${brandName}全新亮相，${phase.objectives[0]}正式启动`,
       `发现${brandName}的独特魅力`,
@@ -364,7 +461,32 @@ ${strategy.description}
   private generateFallbackContent(strategy: CampaignStrategy, phase: any, platform: string, contentType: string): string {
     const brandName = this.extractBrandNameFromDescription(strategy.description);
 
-    // 根据平台生成不同风格的内容
+    // 根据营销目标选择不同的内容生成策略
+    if (strategy.objective === 'lead_generation') {
+      return this.generateLeadGenerationFallbackContent(brandName, strategy, phase, platform);
+    } else {
+      return this.generateBrandPromotionFallbackContent(brandName, strategy, phase, platform);
+    }
+  }
+
+  // 线索获取备用内容
+  private generateLeadGenerationFallbackContent(brandName: string, strategy: CampaignStrategy, phase: any, platform: string): string {
+    const leadMagnets = this.getLeadMagnetIdeas(strategy.description);
+
+    const platformContent = {
+      'weibo': this.generateWeiboLeadContent(brandName, strategy, phase, leadMagnets),
+      'zhihu': this.generateZhihuLeadContent(brandName, strategy, phase, leadMagnets),
+      'xiaohongshu': this.generateXiaohongshuLeadContent(brandName, strategy, phase, leadMagnets),
+      'douyin': this.generateDouyinLeadContent(brandName, strategy, phase, leadMagnets),
+      'wechat': this.generateWechatLeadContent(brandName, strategy, phase, leadMagnets)
+    };
+
+    return platformContent[platform as keyof typeof platformContent] ||
+           this.generateGenericLeadContent(brandName, strategy, phase, leadMagnets);
+  }
+
+  // 品牌推广备用内容
+  private generateBrandPromotionFallbackContent(brandName: string, strategy: CampaignStrategy, phase: any, platform: string): string {
     const platformContent = {
       'weibo': this.generateWeiboContent(brandName, strategy, phase),
       'zhihu': this.generateZhihuContent(brandName, strategy, phase),
@@ -375,6 +497,137 @@ ${strategy.description}
 
     return platformContent[platform as keyof typeof platformContent] ||
            this.generateGenericContent(brandName, strategy, phase);
+  }
+
+  // 获取线索磁铁创意
+  private getLeadMagnetIdeas(description: string): { type: string; title: string; value: string }[] {
+    const leadMagnets = [];
+
+    if (description.includes('白酒') || description.includes('酒类')) {
+      leadMagnets.push(
+        { type: '指南', title: '白酒品鉴入门指南', value: '专业品鉴技巧' },
+        { type: '清单', title: '社交场合酒类搭配清单', value: '实用搭配建议' },
+        { type: '优惠', title: '新用户专享品鉴套装', value: '限时优惠' }
+      );
+    } else if (description.includes('科技') || description.includes('AI')) {
+      leadMagnets.push(
+        { type: '报告', title: '行业趋势分析报告', value: '专业洞察' },
+        { type: '工具', title: '免费试用版本', value: '实际体验' },
+        { type: '课程', title: '专家在线讲座', value: '学习机会' }
+      );
+    } else {
+      leadMagnets.push(
+        { type: '指南', title: '专业使用指南', value: '实用技巧' },
+        { type: '优惠', title: '新用户专享优惠', value: '限时福利' },
+        { type: '资源', title: '免费资源包', value: '价值内容' }
+      );
+    }
+
+    return leadMagnets;
+  }
+
+  // 微博线索获取内容
+  private generateWeiboLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `📚 ${magnet.title}免费领取！
+
+想要了解${strategy.contentThemes.join('、')}的朋友们，
+这份${magnet.value}绝对不能错过 ✨
+
+🎯 内容包括：
+• ${phase.objectives.join('\n• ')}
+
+💡 适合人群：对${strategy.contentThemes.join('、')}感兴趣的朋友
+
+评论"想要"，私信获取完整版 📩
+
+#${strategy.contentThemes.join(' #')} #免费资源`;
+  }
+
+  // 知乎线索获取内容
+  private generateZhihuLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `# 分享一份${magnet.title}，希望对大家有帮助
+
+## 背景
+
+最近很多朋友问我关于${strategy.contentThemes.join('、')}的问题，所以整理了这份${magnet.value}。
+
+## 主要内容
+
+${phase.objectives.map((obj, index) => `${index + 1}. ${obj}的详细分析和建议`).join('\n')}
+
+## 获取方式
+
+考虑到内容比较详细，完整版放在了私信里。
+
+如果需要的话，可以关注后私信"${magnet.type}"获取。
+
+希望对正在了解${strategy.contentThemes.join('、')}的朋友有所帮助。`;
+  }
+
+  // 小红书线索获取内容
+  private generateXiaohongshuLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `姐妹们！发现一个超实用的${magnet.title}！✨
+
+最近在研究${strategy.contentThemes.join('、')}，
+找到了这份超详细的${magnet.value} 📚
+
+🌟 包含内容：
+${phase.objectives.map(obj => `✅ ${obj}`).join('\n')}
+
+💡 真的很实用，特别是对${strategy.contentThemes.join('、')}感兴趣的姐妹
+
+想要的宝贝们评论"需要"，我私发给你们～
+
+#${strategy.contentThemes.join(' #')} #干货分享 #实用指南`;
+  }
+
+  // 抖音线索获取内容
+  private generateDouyinLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `🔥 ${magnet.title}免费分享！
+
+${strategy.contentThemes.join('、')}爱好者必备 ✨
+
+📋 内容预览：
+${phase.objectives.map(obj => `• ${obj}`).join('\n')}
+
+💎 这份${magnet.value}真的很实用！
+
+想要完整版的朋友：
+👆 关注 + 评论"要"
+📩 私信发送给你
+
+#${strategy.contentThemes.join(' #')} #干货 #免费资源`;
+  }
+
+  // 微信线索获取内容
+  private generateWechatLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `朋友们，分享一个实用的${magnet.title}
+
+最近整理了一份关于${strategy.contentThemes.join('、')}的${magnet.value}，内容包括：
+
+${phase.objectives.map((obj, index) => `${index + 1}. ${obj}`).join('\n')}
+
+觉得对正在了解这个领域的朋友会有帮助。
+
+如果需要的话可以私信我，免费分享给大家 😊`;
+  }
+
+  // 通用线索获取内容
+  private generateGenericLeadContent(brandName: string, strategy: CampaignStrategy, phase: any, leadMagnets: any[]): string {
+    const magnet = leadMagnets[0];
+    return `${magnet.title}免费分享
+
+为${strategy.contentThemes.join('、')}爱好者准备的${magnet.value}
+
+主要内容：
+${phase.objectives.map((obj, index) => `${index + 1}. ${obj}`).join('\n')}
+
+感兴趣的朋友可以联系获取完整版`;
   }
 
   // 微博风格内容
@@ -466,20 +719,30 @@ ${strategy.description}
   }
 
   // 生成话题标签
-  private generateHashtags(themes: string[], platform: string): string[] {
-    // 基于主题生成相关标签
+  private generateHashtags(themes: string[], platform: string, objective?: string): string[] {
     const themeHashtags = themes.slice(0, 2);
 
-    const platformHashtags = {
-      'weibo': ['新品推荐', '品牌故事'],
-      'zhihu': ['产品体验', '行业分析'],
-      'xiaohongshu': ['种草', '好物推荐'],
-      'douyin': ['新发现', '值得关注'],
-      'wechat': ['分享', '推荐']
-    };
-
-    const additional = platformHashtags[platform as keyof typeof platformHashtags] || ['品牌推荐', '产品体验'];
-    return [...themeHashtags, ...additional];
+    if (objective === 'lead_generation') {
+      const leadHashtags = {
+        'weibo': ['免费资源', '干货分享'],
+        'zhihu': ['实用指南', '专业分享'],
+        'xiaohongshu': ['干货', '免费领取'],
+        'douyin': ['免费资源', '实用技巧'],
+        'wechat': ['分享', '实用']
+      };
+      const additional = leadHashtags[platform as keyof typeof leadHashtags] || ['免费资源', '实用指南'];
+      return [...themeHashtags, ...additional];
+    } else {
+      const brandHashtags = {
+        'weibo': ['新品推荐', '品牌故事'],
+        'zhihu': ['产品体验', '行业分析'],
+        'xiaohongshu': ['种草', '好物推荐'],
+        'douyin': ['新发现', '值得关注'],
+        'wechat': ['分享', '推荐']
+      };
+      const additional = brandHashtags[platform as keyof typeof brandHashtags] || ['品牌推荐', '产品体验'];
+      return [...themeHashtags, ...additional];
+    }
   }
 
   // 生成素材需求

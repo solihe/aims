@@ -3,6 +3,7 @@ import React, { useState } from 'react';
 import { useStrategyStore } from '../../stores/useStrategyStore';
 import { useAppStore } from '../../stores/useAppStore';
 import { useLLMStore } from '../../stores/useLLMStore';
+import { useContentStore } from '../../stores/useContentStore';
 import { LLMSelector } from '../llm/LLMSelector';
 import { MarketingIntent, MarketingObjective } from '../../types';
 import { Target, Calendar, Users, MessageSquare, Zap, ArrowRight } from 'lucide-react';
@@ -15,6 +16,7 @@ export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOr
   const { createStrategy, isCreating, currentStrategy, setCurrentStrategy } = useStrategyStore();
   const { setError, setLoading } = useAppStore();
   const { getDefaultConfig } = useLLMStore();
+  const { clearContentCalendar } = useContentStore();
   
   const [selectedLLMConfigId, setSelectedLLMConfigId] = useState<string>('');
 
@@ -272,7 +274,10 @@ export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOr
                 <p className="text-gray-600 mt-1">{currentStrategy.name}</p>
               </div>
               <button
-                onClick={() => setCurrentStrategy(null)}
+                onClick={() => {
+                  setCurrentStrategy(null);
+                  clearContentCalendar(); // 清除相关的内容日历
+                }}
                 className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors"
               >
                 重新制定

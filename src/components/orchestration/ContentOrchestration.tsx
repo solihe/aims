@@ -10,15 +10,23 @@ interface ContentOrchestrationProps {
 
 export const ContentOrchestration: React.FC<ContentOrchestrationProps> = ({ onNavigateToWorkspace }) => {
   const { currentStrategy } = useStrategyStore();
-  const { contentCalendar, generateContentCalendar, isGenerating } = useContentStore();
+  const { contentCalendar, currentStrategyId, generateContentCalendar, isGenerating, clearContentCalendar } = useContentStore();
   const [selectedWeek, setSelectedWeek] = useState(1);
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
 
   useEffect(() => {
-    if (currentStrategy && !contentCalendar) {
-      generateContentCalendar(currentStrategy);
+    if (currentStrategy) {
+      // 如果没有内容日历，或者策略ID发生变化，则重新生成
+      if (!contentCalendar || currentStrategyId !== currentStrategy.id) {
+        generateContentCalendar(currentStrategy);
+      }
+    } else {
+      // 如果没有策略，清除内容日历
+      if (contentCalendar) {
+        clearContentCalendar();
+      }
     }
-  }, [currentStrategy, contentCalendar, generateContentCalendar]);
+  }, [currentStrategy, contentCalendar, currentStrategyId, generateContentCalendar, clearContentCalendar]);
 
   if (!currentStrategy) {
     return (
@@ -78,14 +86,29 @@ export const ContentOrchestration: React.FC<ContentOrchestrationProps> = ({ onNa
         </div>
       </div>
 
+      {/* 策略变化提示 */}
+      {currentStrategy && currentStrategyId && currentStrategyId !== currentStrategy.id && !isGenerating && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></div>
+            <p className="text-blue-800 font-medium">策略已更新</p>
+          </div>
+          <p className="text-blue-700 text-sm mt-1">
+            检测到策略变化，内容计划将自动重新生成以匹配新的策略要求
+          </p>
+        </div>
+      )}
+
       {/* 内容日历生成 */}
       {isGenerating ? (
         <div className="bg-white rounded-lg shadow-sm border p-8">
           <div className="text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">AI正在生成内容计划...</h3>
+            <h3 className="text-lg font-semibold text-gray-900 mb-2">
+              {currentStrategyId !== currentStrategy.id ? 'AI正在重新生成内容计划...' : 'AI正在生成内容计划...'}
+            </h3>
             <p className="text-gray-600">
-              正在基于您的策略生成{totalWeeks}周的详细内容日历和具体文案
+              正在基于您的{currentStrategyId !== currentStrategy.id ? '最新' : ''}策略生成{totalWeeks}周的详细内容日历和具体文案
             </p>
           </div>
         </div>

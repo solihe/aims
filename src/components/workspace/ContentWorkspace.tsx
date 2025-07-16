@@ -26,7 +26,7 @@ interface ContentWorkspaceProps {
 }
 
 export const ContentWorkspace: React.FC<ContentWorkspaceProps> = ({ onNavigateToAnalytics }) => {
-  const { contentCalendar, updateCalendarItem } = useContentStore();
+  const { contentCalendar, currentStrategyId, updateCalendarItem } = useContentStore();
   const { currentStrategy } = useStrategyStore();
   const [selectedStatus, setSelectedStatus] = useState<string>('all');
   const [selectedPlatform, setSelectedPlatform] = useState<string>('all');
@@ -108,6 +108,19 @@ export const ContentWorkspace: React.FC<ContentWorkspaceProps> = ({ onNavigateTo
           审核、编辑和优化生成的内容，准备发布到各个平台
         </p>
       </div>
+
+      {/* 策略同步状态提示 */}
+      {currentStrategy && currentStrategyId && currentStrategyId !== currentStrategy.id && (
+        <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
+          <div className="flex items-center space-x-2">
+            <AlertCircle className="w-5 h-5 text-orange-500" />
+            <p className="text-orange-800 font-medium">内容与策略不同步</p>
+          </div>
+          <p className="text-orange-700 text-sm mt-1">
+            当前内容是基于旧策略生成的，请返回"内容编排"页面重新生成最新内容
+          </p>
+        </div>
+      )}
 
       {/* 工作区统计 */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">

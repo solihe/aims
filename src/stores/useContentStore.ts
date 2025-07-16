@@ -25,8 +25,10 @@ export interface ContentCalendarItem {
 interface ContentStore extends ContentState {
   // 内容日历相关
   contentCalendar: ContentCalendarItem[] | null;
+  currentStrategyId: string | null; // 跟踪当前策略ID
   generateContentCalendar: (strategy: CampaignStrategy) => Promise<void>;
   updateCalendarItem: (itemId: string, updates: Partial<ContentCalendarItem>) => void;
+  clearContentCalendar: () => void; // 清除内容日历
 
   // 原有Actions
   generateContent: (request: ContentRequest) => Promise<ContentMatrix>;
@@ -46,13 +48,18 @@ export const useContentStore = create<ContentStore>()(
       matrices: [],
       isGenerating: false,
       contentCalendar: null,
+      currentStrategyId: null,
 
       // 内容日历Actions
       generateContentCalendar: async (strategy: CampaignStrategy) => {
         set({ isGenerating: true });
         try {
           const calendar = await contentService.generateContentCalendar(strategy);
-          set({ contentCalendar: calendar, isGenerating: false });
+          set({
+            contentCalendar: calendar,
+            currentStrategyId: strategy.id,
+            isGenerating: false
+          });
         } catch (error) {
           set({ isGenerating: false });
           throw error;
@@ -65,6 +72,10 @@ export const useContentStore = create<ContentStore>()(
             item.id === itemId ? { ...item, ...updates } : item
           ) || null
         }));
+      },
+
+      clearContentCalendar: () => {
+        set({ contentCalendar: null, currentStrategyId: null });
       },
 
       // 原有Actions

@@ -4,8 +4,7 @@
 
 export enum MarketingObjective {
   PRODUCT_LAUNCH = 'product_launch',
-  BRAND_BUILDING = 'brand_building', 
-  LEAD_GENERATION = 'lead_generation',
+  BRAND_BUILDING = 'brand_building',
   SALES_CONVERSION = 'sales_conversion',
   CRISIS_MANAGEMENT = 'crisis_management'
 }

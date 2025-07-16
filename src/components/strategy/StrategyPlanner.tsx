@@ -67,7 +67,6 @@ export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOr
   const objectiveOptions = [
     { value: MarketingObjective.PRODUCT_LAUNCH, label: '产品发布', icon: Zap },
     { value: MarketingObjective.BRAND_BUILDING, label: '品牌建设', icon: Target },
-    { value: MarketingObjective.LEAD_GENERATION, label: '线索获取', icon: Users },
     { value: MarketingObjective.SALES_CONVERSION, label: '销售转化', icon: MessageSquare },
     { value: MarketingObjective.CRISIS_MANAGEMENT, label: '危机管理', icon: Calendar }
   ];

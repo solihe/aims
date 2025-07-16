@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Zap, Target, BarChart3, Settings, Brain, Briefcase } from 'lucide-react';
+import { Zap, Target, BarChart3, Settings, Brain, Briefcase, Search } from 'lucide-react';
 import { StrategyPlanner } from './components/strategy/StrategyPlanner';
 import { LLMSettings } from './components/llm/LLMSettings';
 import { ContentOrchestration } from './components/orchestration/ContentOrchestration';
 import { ContentWorkspace } from './components/workspace/ContentWorkspace';
 import { EffectAnalytics } from './components/analytics/EffectAnalytics';
 import { CampaignManager } from './components/campaign/CampaignManager';
+import { LeadHunter } from './components/leads/LeadHunter';
 import { useStrategyStore } from './stores/useStrategyStore';
 import { CampaignStrategy } from './types';
 
@@ -38,6 +39,8 @@ function App() {
         return <ContentWorkspace onNavigateToAnalytics={() => setCurrentView('analytics')} />;
       case 'analytics':
         return <EffectAnalytics />;
+      case 'leads':
+        return <LeadHunter />;
       case 'llm-settings':
         return <LLMSettings />;
       default:
@@ -59,6 +62,7 @@ function App() {
     { id: 'orchestration', label: '内容编排', icon: Zap },
     { id: 'content', label: '内容工作区', icon: Settings },
     { id: 'analytics', label: '效果分析', icon: BarChart3 },
+    { id: 'leads', label: '线索猎手', icon: Search },
     { id: 'llm-settings', label: 'LLM设置', icon: Brain },
   ];
 

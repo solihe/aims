@@ -5,9 +5,13 @@ import { useAppStore } from '../../stores/useAppStore';
 import { useLLMStore } from '../../stores/useLLMStore';
 import { LLMSelector } from '../llm/LLMSelector';
 import { MarketingIntent, MarketingObjective } from '../../types';
-import { Target, Calendar, Users, MessageSquare, Zap } from 'lucide-react';
+import { Target, Calendar, Users, MessageSquare, Zap, ArrowRight } from 'lucide-react';
 
-export const StrategyPlanner: React.FC = () => {
+interface StrategyPlannerProps {
+  onNavigateToOrchestration?: () => void;
+}
+
+export const StrategyPlanner: React.FC<StrategyPlannerProps> = ({ onNavigateToOrchestration }) => {
   const { createStrategy, isCreating, currentStrategy, setCurrentStrategy } = useStrategyStore();
   const { setError, setLoading } = useAppStore();
   const { getDefaultConfig } = useLLMStore();
@@ -370,6 +374,25 @@ export const StrategyPlanner: React.FC = () => {
                   </li>
                 ))}
               </ul>
+            </div>
+
+            {/* 下一步操作 */}
+            <div className="pt-6 border-t">
+              <div className="flex justify-between items-center">
+                <div>
+                  <h4 className="text-lg font-semibold text-gray-900">下一步：内容编排</h4>
+                  <p className="text-gray-600 text-sm">基于此策略生成具体的内容计划和发布日历</p>
+                </div>
+                {onNavigateToOrchestration && (
+                  <button
+                    onClick={onNavigateToOrchestration}
+                    className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+                  >
+                    <span>开始内容编排</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         </div>

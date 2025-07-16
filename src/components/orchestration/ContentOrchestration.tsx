@@ -2,9 +2,13 @@
 import React, { useState, useEffect } from 'react';
 import { useStrategyStore } from '../../stores/useStrategyStore';
 import { useContentStore } from '../../stores/useContentStore';
-import { Calendar, Clock, Target, Users, FileText, Image, Video, Hash } from 'lucide-react';
+import { Calendar, Clock, Target, Users, FileText, Image, Video, Hash, ArrowRight } from 'lucide-react';
 
-export const ContentOrchestration: React.FC = () => {
+interface ContentOrchestrationProps {
+  onNavigateToWorkspace?: () => void;
+}
+
+export const ContentOrchestration: React.FC<ContentOrchestrationProps> = ({ onNavigateToWorkspace }) => {
   const { currentStrategy } = useStrategyStore();
   const { contentCalendar, generateContentCalendar, isGenerating } = useContentStore();
   const [selectedWeek, setSelectedWeek] = useState(1);
@@ -212,6 +216,29 @@ export const ContentOrchestration: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* 下一步操作 */}
+          {contentCalendar && contentCalendar.length > 0 && (
+            <div className="mt-6 bg-white rounded-lg shadow-sm border">
+              <div className="p-6">
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h4 className="text-lg font-semibold text-gray-900">下一步：内容工作区</h4>
+                    <p className="text-gray-600 text-sm">进入工作区审核、编辑和优化生成的内容</p>
+                  </div>
+                  {onNavigateToWorkspace && (
+                    <button
+                      onClick={onNavigateToWorkspace}
+                      className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center space-x-2"
+                    >
+                      <span>进入工作区</span>
+                      <ArrowRight className="w-4 h-4" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </>
       ) : (
         <div className="bg-white rounded-lg shadow-sm border p-8">

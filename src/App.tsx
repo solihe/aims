@@ -3,6 +3,7 @@ import { Zap, Target, BarChart3, Settings, Brain } from 'lucide-react';
 import { StrategyPlanner } from './components/strategy/StrategyPlanner';
 import { LLMSettings } from './components/llm/LLMSettings';
 import { ContentOrchestration } from './components/orchestration/ContentOrchestration';
+import { ContentWorkspace } from './components/workspace/ContentWorkspace';
 import { useStrategyStore } from './stores/useStrategyStore';
 
 function App() {
@@ -14,9 +15,9 @@ function App() {
       case 'strategy':
         return <StrategyPlanner onNavigateToOrchestration={() => setCurrentView('orchestration')} />;
       case 'orchestration':
-        return <ContentOrchestration />;
+        return <ContentOrchestration onNavigateToWorkspace={() => setCurrentView('content')} />;
       case 'content':
-        return <div className="p-8 text-center text-gray-500">内容工作区开发中...</div>;
+        return <ContentWorkspace />;
       case 'analytics':
         return <div className="p-8 text-center text-gray-500">效果分析开发中...</div>;
       case 'llm-settings':

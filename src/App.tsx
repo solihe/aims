@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
 import { Zap, Target, BarChart3, Settings, Brain } from 'lucide-react';
+import { StrategyPlanner } from './components/strategy/StrategyPlanner';
+import { LLMSettings } from './components/llm/LLMSettings';
 
 function App() {
   const [currentView, setCurrentView] = useState('strategy');
@@ -7,12 +9,7 @@ function App() {
   const renderView = () => {
     switch (currentView) {
       case 'strategy':
-        return (
-          <div className="p-8">
-            <h2 className="text-2xl font-bold mb-4">策略制定</h2>
-            <p className="text-gray-600">策略制定功能正在开发中...</p>
-          </div>
-        );
+        return <StrategyPlanner />;
       case 'orchestration':
         return <div className="p-8 text-center text-gray-500">编排仪表板开发中...</div>;
       case 'content':
@@ -20,19 +17,9 @@ function App() {
       case 'analytics':
         return <div className="p-8 text-center text-gray-500">效果分析开发中...</div>;
       case 'llm-settings':
-        return (
-          <div className="p-8">
-            <h2 className="text-2xl font-bold mb-4">LLM设置</h2>
-            <p className="text-gray-600">LLM配置功能正在开发中...</p>
-          </div>
-        );
+        return <LLMSettings />;
       default:
-        return (
-          <div className="p-8">
-            <h2 className="text-2xl font-bold mb-4">策略制定</h2>
-            <p className="text-gray-600">策略制定功能正在开发中...</p>
-          </div>
-        );
+        return <StrategyPlanner />;
     }
   };
 
